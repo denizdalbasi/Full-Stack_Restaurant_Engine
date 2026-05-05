@@ -3,6 +3,11 @@ import sqlite3
 import time
 
 
+# Global variables
+needs_onion = False
+
+
+
 def init_db():
     conn = sqlite3.connect('kitchen.db')
     cursor = conn.cursor()
@@ -38,7 +43,7 @@ def init_db():
 
     # Table for Service Accompaniments
     cursor.execute('''
-            CREATE TABLE IF NOT EXISTS yaninda (
+            CREATE TABLE IF NOT EXISTS sides (
                 urun TEXT PRIMARY KEY,
                 eldeki_sayi INTEGER,
                 birimler TEXT
@@ -59,7 +64,7 @@ def init_db():
         ('Tea', 10, 'cups'),
         ('Cheese', 4, 'slices')
     ]
-    cursor.executemany('INSERT OR IGNORE INTO yaninda VALUES (?,?,?)', sides)
+    cursor.executemany('INSERT OR IGNORE INTO sides VALUES (?,?,?)', sides)
 
     ingredients = [
         ('Tomato', 3, 1, 'piece'),
@@ -138,7 +143,7 @@ def temizle(urun_listesi):
 
 
 def check_multiple_ingredients(conn, item_list):
-    slow_print("--- Automatic Restocking System Active ---")
+    slow_print("\n--- Automatic Restocking System Active ---")
     cursor = conn.cursor()
 
     for item_name in item_list:
@@ -171,7 +176,7 @@ def check_multiple_ingredients(conn, item_list):
             print(f"   [+] {item_name} stock is sufficient ({stock}).")
 
     conn.commit()
-    slow_print("--- Inventory Check Complete ---")
+    slow_print("\n--- Inventory Check Complete ---")
 
 def buy_tool(tool_name):
 
@@ -225,8 +230,11 @@ def check_multiple_tools(conn,tool_list):
 
 
 def update_final_stock(conn, item_list):
+    global needs_onion
     cursor = conn.cursor()
     for item in item_list:
+        if item == "Onion" and not needs_onion:
+            continue
         cursor.execute('''
             UPDATE ingredient_list
             SET stock_count = stock_count - (
@@ -264,7 +272,43 @@ def is_inventory_sufficient(conn, item_list):
     return insufficient_items
 
 
+def check_sides_stock(conn):
+    slow_print("--- Side Items Inventory Check in Progress ---")
+    cursor = conn.cursor()
+
+    # Check all side items (Bread, Tea, Cheese, etc.)
+    cursor.execute("SELECT urun, eldeki_sayi FROM sides")
+    sides = cursor.fetchall()
+
+    for side_name, count in sides:
+        # Define a critical threshold (e.g., if stock is less than 3)
+        if count < 3:
+            # Automatic restock: add 10 units to the current stock
+            new_count = count + 10
+            cursor.execute('''
+                UPDATE sides 
+                SET eldeki_sayi = ? 
+                WHERE urun = ?
+            ''', (new_count, side_name))
+
+            print(f"   [Auto-Restock] {side_name} was low. Stock replenished. New count: {new_count}")
+        else:
+            print(f"   [+] {side_name} stock is sufficient ({count}).")
+
+    conn.commit()
+    slow_print("\n--- Sides Inventory Check Complete ---")
+
 def preperation(conn):
+    global needs_onion
+
+    answer = input("Do you want to include onions? (yes/no): ").lower().strip()
+    if answer == "yes":
+        needs_onion = True
+        print("[Onion] Peeling and dicing...")
+        waste_management("onion skins")
+    else:
+        needs_onion = False
+
     slow_print("\n--- Starting Preparation Process ---")
     ingredients_to_check = ["Tomato", "Pepper", "Egg", "Onion"]
 
@@ -299,8 +343,7 @@ def preperation(conn):
         print("[Tomato] Scoring with an X and peeling gently.")
         waste_management("peels")
 
-    needs_onion = input("Do you want to include onions? (yes/no): ").lower().strip()
-    if needs_onion == "yes":
+    if needs_onion:
         print("[Onion] Peeling, slicing half-moons, and dicing cubes.")
         waste_management("onion skins")
 
@@ -317,7 +360,8 @@ def preperation(conn):
     return True
 
 def cooking(conn):
-    print("\n--- Starting Cooking Process (Pisirme Sureci) ---")
+    global needs_onion
+    slow_print("\n--- Starting Cooking Process (Pisirme Sureci) ---")
 
     print("Gathering materials: Spatula, Tomato, Pepper, Onion, Salt, Butter/Oil...")
     print("Gathering tools: Pan, Stove, Spatula, Fork...")
@@ -340,11 +384,10 @@ def cooking(conn):
             time.sleep(1)  # Simulation
 
     # 3. Onion Cooking
-    has_onion = input("Are you using onions? (yes/no): ").lower().strip()
-    if has_onion == "yes":
-        print("Adding onions to the pan. Sautéing for 2 minutes.")
+    if needs_onion:
+        print("Adding onions to the pan. Wait for 2 minutes.")
         while True:
-            pink = input("Are the onions translucent/pink? (yes/no): ").lower().strip()
+            pink = input("Are the onions pink? (yes/no): ").lower().strip()
             if pink == "yes":
                 break
             else:
@@ -385,7 +428,7 @@ def cooking(conn):
 
     print("Turning off the stove.")
 
-    print("--- Cooking Process Complete (End) ---")
+    slow_print("\n--- Cooking Process Complete (End) ---")
 
 
 def get_valid_input(prompt, validation_type):
@@ -443,6 +486,7 @@ def feedback_process(conn, user_name):
 
 def serve(conn):
     print("\n--- Starting Service (Servis) ---")
+    check_sides_stock(conn)
 
     # 1. Menemen Preparation and Plate
     print("Plating the Menemen...")
@@ -452,12 +496,12 @@ def serve(conn):
 
     add_sides = input("Would you like side items (Bread, Tea, Cheese)? (yes/no): ").lower().strip()
     if add_sides == "yes":
-        cursor.execute("SELECT urun, eldeki_sayi, birimler FROM yaninda")
+        cursor.execute("SELECT urun, eldeki_sayi, birimler FROM sides")
         sides = cursor.fetchall()
         for side, count, unit in sides:
             if count > 0:
                 print(f"   [Adding Side] {side} ({count} {unit} available)")
-                cursor.execute("UPDATE yaninda SET eldeki_sayi = eldeki_sayi - 1 WHERE urun = ?", (side,))
+                cursor.execute("UPDATE sides SET eldeki_sayi = eldeki_sayi - 1 WHERE urun = ?", (side,))
 
     conn.commit()
 
@@ -496,5 +540,8 @@ if __name__ == "__main__":
                     print("\nSimulation cycle complete!")
                 else:
                     print("\nCycle aborted due to missing supplies.")
+            elif hungry == "no":
+                print("Please come when you are hungry")
+
     finally:
         main_conn.close()
