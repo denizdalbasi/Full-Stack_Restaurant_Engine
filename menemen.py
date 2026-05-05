@@ -538,6 +538,7 @@ if __name__ == "__main__":
                     cooking(main_conn)
                     serve(main_conn)
                     print("\nSimulation cycle complete!")
+
                 else:
                     print("\nCycle aborted due to missing supplies.")
             elif hungry == "no":
