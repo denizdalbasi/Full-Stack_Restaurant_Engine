@@ -1,45 +1,53 @@
-# Menemen Cooking Simulator
+# Menemen Web Simulator
 
-A fun, text-based Python project that simulates the full experience of cooking traditional Menemen—from checking your kitchen to cleaning up afterward.
+A professional ***Flask-based web application*** that simulates a full restaurant lifecycle—from interactive menemen cooking and customer feedback to financial management and inventory control.
 
 ---
-# Objectives
 
-- Simulate the cooking process
+## ***Objectives***
 
-- Recreate real steps like washing, chopping, and cooking ingredients.
+- **Simulate the business & cooking process**
+  - Recreate real cooking steps while managing the financial side of a restaurant.
+- **Manage live inventory**
+  - Track stock levels in real-time and prevent ***negative*** cooking when ingredients run out.
+- **Enforce business logic**
+  - Block purchases (restocking) if the budget is insufficient and log every transaction.
+- **Create an interactive web experience**
+  - Use a Flask-driven UI to guide the user through preparation, cooking, and management.
+- **Store and group data**
+  - Use a database to archive logs and group customer feedback by user for a clean overview.
 
-- Manage kitchen inventory
+---
 
-- Keep track of what you have and make sure nothing magically appears out of nowhere.
+## ***Tech Stack***
 
-- Create an interactive experience
+- **Python (Flask)**
+- **SQLite3**
+- **HTML/CSS (Jinja2)**
 
-- Let the user guide the process through a simple command-line interface.
+---
 
-- Store data
+## ***Database tables include:***
 
-- Save feedback and kitchen state using a database.
+* ***`ingredient_list`***: Current stock levels and units.
+* ***`recipe_amounts`***: Essential amounts needed for the recipe.
+* ***`mutfak_araclari`***: Status of kitchen tools and extras.
+* ***`finances`***: Total revenue, costs, and profit tracking.
+* ***`activity_logs`***: Timestamped history of sales and expenses.
+* ***`feedback`***: Customer reviews and user-based answers.
 
+---
 
+### **Live Site:** [Visit Menemen Simulator](http://admin684584165418645.pythonanywhere.com/)
 
-# Tech Stack
+> **Admin Access:**
+> - **Username:** `admin`
+> - **Password:** `admin123`
 
-- Python 
+---
 
-- SQLite3 
+## ***Workflow***
 
-
-
-# Database tables include:
-
-*   **`ingredient_list`**
-*   **`recipe_amounts`**
-*   **`mutfak_araclari`**
-*   **`yaninda`**
-*   **`feedback`**
-
- # Workflow
 To view the interactive logic and user flow, visit our Miro board:
 
 [![Workflow Preview](https://img.shields.io/badge/Miro-View%20Workflow-blue?style=for-the-badge&logo=miro)](https://miro.com/app/board/uXjVHXw9tN8=/)
